@@ -1,0 +1,66 @@
+CREATE PROCEDURE [dbo].[Influencer_SearchPaginated]
+
+	@PageIndex INT,
+	@PageSize INT,
+	@Search NVARCHAR(500)
+
+AS
+
+/* !! TEST CODE !!
+
+	DECLARE
+		@PageIndex INT = 0,
+		@PageSize INT = 2,
+		@Search NVARCHAR(500) = 'ok'
+
+	EXECUTE dbo.Influencer_SearchPaginated
+		@PageIndex,
+		@PageSize,
+		@Search
+
+*/
+
+BEGIN
+
+	SELECT 
+		I.Id,
+		I.UserId, 
+		I.Bio, 
+		I.FaqId, 
+		I.MilestoneId,
+		I.IsActive,
+		T.InstagramUsername,
+		T.InstagramFollowers,
+		T.InstagramBio,
+		T.InstagramAvatar,
+		UP.FirstName,
+		UP.LastName,
+		TotalCount = COUNT(*) OVER()
+
+	FROM 
+		dbo.Influencer I 
+		INNER JOIN 
+		dbo.InstagramAccessTokens T 
+		ON 
+		I.UserId = T.UserId
+		INNER JOIN 
+		dbo.UserProfiles UP
+		ON 
+		I.UserId = UP.UserId
+
+	WHERE 
+		Bio LIKE '%' + @Search + '%'
+		OR
+		T.InstagramUsername Like '%' + @Search + '%'
+		OR
+		UP.FirstName Like '%' + @Search + '%'
+		OR
+		UP.LastName Like '%' + @Search + '%'
+
+	ORDER BY I.Id
+
+	OFFSET (@PageIndex * @PageSize) ROWS 
+
+	FETCH NEXT @PageSize ROWS ONLY;
+
+END
